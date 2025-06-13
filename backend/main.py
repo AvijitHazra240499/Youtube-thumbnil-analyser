@@ -43,8 +43,8 @@ if _groq:
 else:
     print("[DEBUG] GROQ_API_KEY is NOT loaded!")
 
-# Print DeepSeek API key at startup for debug
-print("[DEBUG] DEEPSEEK_API_KEY (startup):", os.getenv("DEEPSEEK_API_KEY"))
+# # Print DeepSeek API key at startup for debug
+# print("[DEBUG] DEEPSEEK_API_KEY (startup):", os.getenv("DEEPSEEK_API_KEY"))
 
 # Global exception handler for all uncaught exceptions
 def setup_global_exception_handler(app):
@@ -362,83 +362,12 @@ def get_google_trends_keywords(query: str, max_results: int = 5) -> list:
                 return [{"keyword": kw, "source": "google_trends"} for kw in keywords]
         except Exception as e:
             print(f"[WARNING] Fallback method failed: {e}")
-            import traceback; traceback.print_exc()
+            import traceback
+            traceback.print_exc()
         print("[WARNING] No keywords found in Google Trends")
-        return []
-    except Exception as e:
-        print(f"[ERROR] Google Trends API error: {e}")
-        import traceback
-        traceback.print_exc()
         return []
 
 import re
-
-def get_deepseek_keywords(query: str, count: int):
-    # Fetch keywords from DeepSeek API directly
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if not api_key:
-        print("[WARN] DEEPSEEK_API_KEY not found, skipping DeepSeek.")
-        return None
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    prompt = f"""Generate exactly {count} YouTube keyword ideas for the topic '{query}'.\nFor each keyword, provide the following metrics in a valid JSON format:\n- keyword (string)\n- searchVolume (integer, estimated)\n- competition (float, 0.0 to 1.0)\n- trend (string: 'up', 'down', 'stable')\n- difficulty (float, 0.0 to 1.0)\n- magicScore (float, 0.0 to 1.0, a blend of all factors)\n- source (string, should be 'deepseek')\n\nReturn ONLY a single JSON object with a 'keywords' key containing an array of these objects. Example:\n{{\n    \"keywords\": [\n        {{\n            \"keyword\": \"Example Keyword\",\n            \"searchVolume\": 12345,\n            \"competition\": 0.8,\n            \"trend\": \"up\",\n            \"difficulty\": 0.6,\n            \"magicScore\": 0.75,\n            \"source\": \"deepseek\"\n        }}\n    ]\n}}\n"""
-
-    data = {
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7,
-        "max_tokens": 2048,
-        "stream": False
-    }
-    
-    endpoint = "https://api.deepseek.com/v1/chat/completions"
-    print(f"[DEBUG] Sending request to Deepseek API for query: '{query}'")
-    
-    try:
-        response = requests.post(
-            endpoint,
-            headers=headers,
-            json=data,
-            timeout=30
-        )
-        
-        response.raise_for_status()
-        response_json = response.json()
-        
-        # Extract the content from the response
-        if "choices" in response_json and len(response_json["choices"]) > 0:
-            content = response_json["choices"][0]["message"]["content"]
-            
-            # Parse the JSON string in the response
-            try:
-                keywords_data = json.loads(content)
-                if not isinstance(keywords_data, dict) or "keywords" not in keywords_data:
-                    print(f"[ERROR] Invalid keywords format in response: {keywords_data}")
-                    return None
-                return keywords_data
-            except json.JSONDecodeError as je:
-                print(f"[ERROR] Failed to parse keywords JSON: {je}")
-                print(f"[DEBUG] Raw content that failed to parse: {content}")
-                return None
-        else:
-            print(f"[ERROR] Unexpected response format from Deepseek: {response_json}")
-            return None
-            
-    except requests.exceptions.RequestException as e:
-        error_msg = str(e)
-        if hasattr(e, 'response') and e.response is not None:
-            error_msg += f" | Status: {e.response.status_code} | Response: {e.response.text}"
-        print(f"[ERROR] Deepseek API request failed for '{query}': {error_msg}")
-        return None
-    except Exception as e:
-        print(f"[ERROR] Unexpected error in get_deepseek_keywords for '{query}': {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return None
 
 def get_groq_keywords(query: str, count: int) -> list:
     """Fetch keywords from Groq AI, returning [{'keyword': ..., 'source': 'groq'}]."""
@@ -747,45 +676,6 @@ List {count} highly relevant YouTube keywords for "{query}" as a JSON array of o
         traceback.print_exc()
         raise
 
-@app.on_event("startup")
-async def startup_event():
-    deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
-    print(f"[DEBUG] DEEPSEEK_API_KEY: {deepseek_api_key}")
-
-def get_keyword_metrics(keyword: str) -> dict:
-    """
-    Get metrics for a single keyword with safe fallbacks.
-    Returns a dictionary with keyword metrics or None if an error occurs.
-    """
-    try:
-        print(f"[DEBUG] Getting metrics for keyword: {keyword}")
-        
-        # Generate mock metrics (replace with real API calls if needed)
-        metrics = {
-            "keyword": keyword,
-            "searchVolume": random.randint(1000, 100000),
-            "competition": round(random.uniform(0.1, 1.0), 2),
-            "trend": random.choice(['up', 'stable', 'down']),
-            "difficulty": round(random.uniform(0.1, 1.0), 2),
-            "magicScore": round(random.uniform(0.1, 1.0), 2),
-        }
-        print(f"[DEBUG] Metrics for '{keyword}': {metrics}")
-        return metrics
-        
-    except Exception as e:
-        print(f"[ERROR] Failed to get metrics for '{keyword}': {str(e)}")
-        # Return a safe default if metrics generation fails
-        return {
-            "keyword": keyword,
-            "searchVolume": 0,
-            "competition": 0.0,
-            "trend": "unknown",
-            "difficulty": 0.0,
-            "magicScore": 0.0,
-            "error": str(e),
-            "fallback": True
-        }
-
 @app.post("/generate_tweet")
 async def generate_tweet(request: Request, image: UploadFile = FastAPIFile(None), topic: str = Form(None)):
     try:
@@ -805,7 +695,6 @@ async def generate_tweet(request: Request, image: UploadFile = FastAPIFile(None)
             img_str = base64.b64encode(buffered.getvalue()).decode()
 
         groq_api_key = os.getenv("GROQ_API_KEY")
-        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 
         tweet_prompt = "Generate 3 creative, viral tweets (each max 280 chars, no hashtags) for a YouTube/Instagram post based on this {}. Output each tweet on a separate line, no extra text.".format(
             "image" if image else "topic"
@@ -845,39 +734,11 @@ async def generate_tweet(request: Request, image: UploadFile = FastAPIFile(None)
             except Exception as e:
                 print(f"[GROQ EXCEPTION] {str(e)}")
                 return None
-        def call_deepseek(prompt):
-            if not openrouter_api_key:
-                print("[ERROR] OPENROUTER_API_KEY not set for DeepSeek fallback")
-                return None
-            headers = {"Authorization": f"Bearer {openrouter_api_key}", "Content-Type": "application/json"}
-            messages = [
-                {"role": "user", "content": prompt}
-            ]
-            payload = {"model": "deepseek-coder-v1-8b", "messages": messages, "max_tokens": 800}
-            try:
-                resp = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=30)
-                if resp.status_code == 200:
-                    return resp.json()["choices"][0]["message"]["content"].strip()
-                else:
-                    print(f"[DEEPSEEK ERROR] {resp.status_code}: {resp.text}")
-                    return None
-            except Exception as e:
-                print(f"[DEEPSEEK EXCEPTION] {str(e)}")
-                return None
-
-        # Try Groq first
+        # Generate content using Groq
         tweet = call_groq(tweet_prompt)
         ig = call_groq(ig_prompt)
-        # If Groq fails, try DeepSeek
-        if not tweet or not ig:
-            tweet_fallback = call_deepseek(tweet_prompt)
-            ig_fallback = call_deepseek(ig_prompt)
-            if tweet_fallback:
-                tweet = tweet_fallback
-            if ig_fallback:
-                ig = ig_fallback
         if not tweet and not ig:
-            return JSONResponse(status_code=500, content={"error": "Both Groq and DeepSeek failed to generate content."})
+            return JSONResponse(status_code=500, content={"error": "Groq failed to generate content."})
         # Split into lists, remove empty lines
         tweet_list = [t.strip() for t in (tweet or '').split('\n') if t.strip()]
         ig_list = [t.strip() for t in (ig or '').split('\n') if t.strip()]
@@ -995,3 +856,37 @@ async def upload_and_query(request: Request, image: UploadFile = FastAPIFile(...
     except Exception as e:
         print(f"[UNEXPECTED ERROR] {str(e)}")
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+def get_keyword_metrics(keyword: str) -> dict:
+    """
+    Get metrics for a single keyword with safe fallbacks.
+    Returns a dictionary with keyword metrics or None if an error occurs.
+    """
+    try:
+        print(f"[DEBUG] Getting metrics for keyword: {keyword}")
+        
+        # Generate mock metrics (replace with real API calls if needed)
+        metrics = {
+            "keyword": keyword,
+            "searchVolume": random.randint(1000, 100000),
+            "competition": round(random.uniform(0.1, 1.0), 2),
+            "trend": random.choice(['up', 'stable', 'down']),
+            "difficulty": round(random.uniform(0.1, 1.0), 2),
+            "magicScore": round(random.uniform(0.1, 1.0), 2),
+        }
+        print(f"[DEBUG] Metrics for '{keyword}': {metrics}")
+        return metrics
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to get metrics for '{keyword}': {str(e)}")
+        # Return a safe default if metrics generation fails
+        return {
+            "keyword": keyword,
+            "searchVolume": 0,
+            "competition": 0.0,
+            "trend": "unknown",
+            "difficulty": 0.0,
+            "magicScore": 0.0,
+            "error": str(e),
+            "fallback": True
+        }
