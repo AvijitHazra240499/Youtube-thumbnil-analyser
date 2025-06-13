@@ -63,7 +63,7 @@ const KeywordMatrix: React.FC = () => {
 
   return (
     <div
-      className="w-full min-h-screen text-white relative"
+      className="w-full min-h-screen text-white relative pt-10"
       style={{
         background: "radial-gradient(circle at 20% 20%, #232946 0%, #15161a 100%)",
         overflow: "hidden"
