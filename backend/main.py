@@ -470,16 +470,17 @@ async def analyze_keyword(query: str = Query(..., min_length=2), suggest: int = 
         suggest = min(max(suggest, 1), 10)
         try:
             result = await get_openrouter_keywords(query, suggest)
+            result["keywords"] = _augment_keyword_rows(result.get("keywords", []))
             print(f"[SUCCESS] Retrieved {len(result['keywords'])} keywords for '{query}' from OpenRouter")
             return result
         except Exception as or_err:
             print(f"[WARNING] OpenRouter keyword fetch failed: {or_err}. Falling back to other sources...")
             keywords = get_google_trends_keywords(query, suggest)
             if keywords:
-                return {"query": query, "keywords": keywords, "timestamp": datetime.now().isoformat()}
+                return {"query": query, "keywords": _augment_keyword_rows(keywords), "timestamp": datetime.now().isoformat()}
             groq_kw = get_groq_keywords(query, suggest)
             if groq_kw:
-                return {"query": query, "keywords": groq_kw, "timestamp": datetime.now().isoformat()}
+                return {"query": query, "keywords": _augment_keyword_rows(groq_kw), "timestamp": datetime.now().isoformat()}
             raise HTTPException(status_code=502, detail="Failed to generate keywords from all sources.")
     except HTTPException as he:
         raise he
@@ -903,3 +904,30 @@ def get_keyword_metrics(keyword: str) -> dict:
             "error": str(e),
             "fallback": True
         }
+
+def _augment_keyword_rows(keyword_rows: list) -> list:
+    augmented = []
+    for item in keyword_rows:
+        if isinstance(item, str):
+            base = {"keyword": item}
+        else:
+            base = dict(item)
+        if "searchVolume" not in base:
+            metrics = estimate_keyword_metrics(base["keyword"])
+            base.update(metrics)
+        augmented.append(base)
+    return augmented
+
+@app.middleware("http")
+async def enrich_keywords_response(request, call_next):
+    response = await call_next(request)
+    try:
+        if request.url.path == "/analyze_keyword" and response.status_code == 200:
+            data = await response.json()
+            if isinstance(data, dict) and "keywords" in data:
+                data["keywords"] = _augment_keyword_rows(data["keywords"])
+                from fastapi.responses import JSONResponse
+                return JSONResponse(content=data)
+    except Exception:
+        pass
+    return response
