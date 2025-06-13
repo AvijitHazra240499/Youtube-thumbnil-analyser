@@ -25,7 +25,8 @@ const KeywordMatrix: React.FC = () => {
       // Real API call to backend
       try {
         // Always use suggest=5
-        const res = await fetch(`http://localhost:8000/analyze_keyword?query=${encodeURIComponent(pendingTerm)}&suggest=5`);
+        const apiBase = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+        const res = await fetch(`${apiBase}/analyze_keyword?query=${encodeURIComponent(pendingTerm)}&suggest=5`);
         if (!res.ok) {
           throw new Error('Failed to fetch keyword data from backend');
         }

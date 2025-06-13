@@ -10,8 +10,11 @@ export function useTrialStatus15() {
   const [expired, setExpired] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Fetch or create trial record once per user
   useEffect(() => {
     if (!user) return;
+
+    let isMounted = true;
     async function fetchOrCreate() {
       setLoading(true);
       const { data, error } = await supabase
@@ -28,17 +31,26 @@ export function useTrialStatus15() {
         trialStart = new Date(data.trial_start);
       }
 
-      setStart(trialStart);
-      updateRemaining(trialStart);
-      setLoading(false);
+      if (isMounted) {
+        setStart(trialStart);
+        updateRemaining(trialStart);
+        setLoading(false);
+      }
     }
 
     fetchOrCreate();
-    const interval = setInterval(() => {
-      if (start) updateRemaining(start);
-    }, 1000 * 30); // update every 30s
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Interval to update remaining time, runs only when start is set
+  useEffect(() => {
+    if (!start) return;
+    const interval = setInterval(() => updateRemaining(start), 1000 * 30); // every 30s
     return () => clearInterval(interval);
-  }, [user, start]);
+  }, [start]);
 
   function updateRemaining(trialStart: Date) {
     const now = new Date();

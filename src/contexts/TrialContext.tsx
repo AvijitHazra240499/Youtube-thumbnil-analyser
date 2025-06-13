@@ -7,6 +7,24 @@ import { useTrialStatus15 } from "@/hooks/useTrialStatus15";
 const TrialContext = createContext<any>(null);
 
 export function TrialProvider({ children }: { children: React.ReactNode }) {
+  // If trials/payments are disabled, return default unlimited access
+  const disableTrial = import.meta.env.VITE_DISABLE_TRIAL === "true";
+  if (disableTrial) {
+    const contextValue = {
+      isPro: true,
+      daysLeft: undefined,
+      minutesLeft: undefined,
+      expired: false,
+      loading: false,
+      testMode: false
+    };
+    return (
+      <TrialContext.Provider value={contextValue}>
+        {children}
+      </TrialContext.Provider>
+    );
+  }
+
   const user = useCurrentUser();
   const { isPro } = useProStatus(user?.id);
 

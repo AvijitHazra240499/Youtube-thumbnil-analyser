@@ -468,10 +468,19 @@ async def analyze_keyword(query: str = Query(..., min_length=2), suggest: int = 
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         query = query.strip()
         suggest = min(max(suggest, 1), 10)
-        # Use OpenRouter API (GPT-3.5 Turbo)
-        result = await get_openrouter_keywords(query, suggest)
-        print(f"[SUCCESS] Retrieved {len(result['keywords'])} keywords for '{query}' from OpenRouter")
-        return result
+        try:
+            result = await get_openrouter_keywords(query, suggest)
+            print(f"[SUCCESS] Retrieved {len(result['keywords'])} keywords for '{query}' from OpenRouter")
+            return result
+        except Exception as or_err:
+            print(f"[WARNING] OpenRouter keyword fetch failed: {or_err}. Falling back to other sources...")
+            keywords = get_google_trends_keywords(query, suggest)
+            if keywords:
+                return {"query": query, "keywords": keywords, "timestamp": datetime.now().isoformat()}
+            groq_kw = get_groq_keywords(query, suggest)
+            if groq_kw:
+                return {"query": query, "keywords": groq_kw, "timestamp": datetime.now().isoformat()}
+            raise HTTPException(status_code=502, detail="Failed to generate keywords from all sources.")
     except HTTPException as he:
         raise he
     except Exception as e:
