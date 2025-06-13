@@ -35,7 +35,8 @@ export function useTrialStatus() {
       setTrialStart(start);
       const now = new Date();
       const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      const TRIAL_DAYS = 5;
+      // Length of free trial in days
+      const TRIAL_DAYS = 3;
       const left = Math.max(0, TRIAL_DAYS - diff);
       setDaysLeft(left);
       setExpired(left <= 0);
