@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Camera, Loader2, MessageSquare, Upload, AlertCircle } from "lucide-react";
@@ -6,12 +6,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useTrial } from "@/contexts/TrialContext";
+import { motion } from "framer-motion"; // For 3D/animated card effects
+import { ResultSlides } from "./ResultSlides";
+
 
 export function ThumbnailAnalyzer() {
   const { isPro, daysLeft, expired, loading: trialLoading } = useTrial();
   const { isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [query, setQuery] = useState('');
   const [llamaResponse, setLlamaResponse] = useState('');
   const [llavaResponse, setLlavaResponse] = useState('');
@@ -46,6 +50,7 @@ export function ThumbnailAnalyzer() {
       // Create preview URL
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      setSelectedFile(file);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while processing the file.');
     } finally {
@@ -57,7 +62,7 @@ export function ThumbnailAnalyzer() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const file = fileInputRef.current?.files?.[0];
+    const file = selectedFile;
     const queryText = query.trim();
 
     if (!file || !queryText) {
@@ -72,57 +77,43 @@ export function ThumbnailAnalyzer() {
 
     try {
       setError(null);
-      // 1. Upload image to Supabase Storage
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
-      const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
-      const userId = user?.id || null;
-      if (!userId) {
-        setError('You must be logged in to use this feature.');
-        setLoading(false);
-        return;
-      }
-      const filePath = `thumbnails/${userId}/${Date.now()}_${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage.from('thumbnails').upload(filePath, file);
-      if (uploadError) {
-        setError('Failed to upload image: ' + uploadError.message);
-        setLoading(false);
-        return;
-      }
-      const { data: publicUrlData } = supabase.storage.from('thumbnails').getPublicUrl(filePath);
-      const imageUrl = publicUrlData?.publicUrl;
-      if (!imageUrl) {
-        setError('Could not get public URL for uploaded image.');
-        setLoading(false);
-        return;
-      }
-      // 2. Call llama-api Edge Function
-      const llamaRes = await fetch('/functions/v1/llama-api', {
+      // Send image and query to FastAPI backend as form-data
+      const formData = new FormData();
+      formData.append('image', file);      formData.append('query', queryText);
+      const response = await fetch('http://127.0.0.1:8000/upload_and_query', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          feature: 'thumbnail-analyzer',
-          prompt: queryText,
-          imageUrl,
-        }),
+        body: formData,
       });
-      const llamaData = await llamaRes.json();
-      if (!llamaRes.ok) {
-        throw new Error(llamaData.error || 'Llama API error');
+      const text = await response.text();
+      if (!text) {
+        setError('Empty response from server');
+        setLoading(false);
+        return;
       }
-      setLlamaResponse(llamaData.result || 'No response from Llama API.');
-      setLlavaResponse(''); // Clear old Llava response
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred while processing the request.');
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        setError('Invalid JSON response from server');
+        setLoading(false);
+        return;
+      }
+      if (data.heading && data.description) {
+        setLlamaResponse(JSON.stringify({ heading: data.heading, description: data.description, hashtags: data.hashtags || '' }));
+      } else {
+        setLlamaResponse(data.llama || '');
+        setLlavaResponse(data.llava || '');
+      }
+      if (data.error) setError(data.error);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while processing your request.');
     } finally {
       setLoading(false);
     }
   }
 
   if (trialLoading) return null;
+
   if (expired && !isPro) {
     return (
       <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-screen">
@@ -139,130 +130,151 @@ export function ThumbnailAnalyzer() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-center mb-12">
-        <Camera className="text-6xl text-gray-400 mr-4" />
-        <h1 className="text-4xl font-bold text-purple-300 shadow-md">AI-DOCTOR (MEDICAL CHATBOT) ANALYZE IMAGE APPLICATION</h1>
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black text-white">
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 -z-10 animate-gradient bg-gradient-to-tr from-[#1e3c72] via-[#2a5298] to-[#6dd5ed] bg-[length:400%_400%]" style={{filter: 'blur(2px)', opacity: 0.8}} />
+      {/* Page Header */}
+      <div className="w-full max-w-5xl mx-auto mb-8 mt-2">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-[#00F0FF] drop-shadow mb-2 tracking-tight text-center">
+          Thumbnail Analyzer
+        </h2>
+        <p className="text-center text-gray-300 mb-2 max-w-2xl mx-auto text-lg">
+          Upload your thumbnail to analyze trends and get performance insights.
+        </p>
+        <div className="w-24 h-1 mx-auto bg-gradient-to-r from-[#00F0FF] to-[#6D5BFF] rounded-full mb-2" />
       </div>
-      {!isPro && !expired && (
-        <div className="flex justify-center mb-6">
-          <div className="bg-blue-900 text-blue-200 px-4 py-2 rounded-lg text-sm font-semibold">
-            {daysLeft} day{daysLeft !== 1 ? 's' : ''} left in your free trial.
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-purple-400">Upload Image</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <div className="w-full border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <Upload className="w-12 h-12 text-gray-400" />
-                <div>
-                  <button
-                    type="button"
-                    className={`inline-flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md cursor-pointer transition-all ${uploading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    onClick={() => {
-                      if (!uploading) fileInputRef.current?.click();
-                    }}
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>Select Image</>
-                    )}
-                  </button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                  />
-                  <p className="mt-2 text-sm text-gray-400">
-                    Choose a file from your computer
-                  </p>
-                </div>
-                <p className="text-xs text-gray-400">
-                  PNG, JPG, GIF up to 50MB
-                </p>
+      <div className="flex flex-col md:flex-row items-start justify-center w-full max-w-6xl mx-auto gap-10 mb-12 px-2 md:px-0">
+        <div className="flex-1 flex flex-col items-center">
+          <div className="w-full max-w-2xl min-h-[320px] h-auto flex flex-col items-center justify-center border-2 border-dashed border-purple-300 rounded-2xl bg-gradient-to-br from-purple-50 to-blue-50 shadow-lg transition-all duration-300 p-0 md:p-2">
+            {!previewUrl ? (
+              <div className="flex flex-col items-center justify-center w-full h-full py-12">
+                <Upload className="w-20 h-20 text-purple-300 mb-6" />
+                <button
+                  type="button"
+                  className={`inline-flex items-center justify-center px-8 py-4 bg-gradient-to-tr from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white text-xl font-semibold rounded-xl shadow-lg cursor-pointer transition-all duration-200 ${uploading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  onClick={() => {
+                    if (!uploading) fileInputRef.current?.click();
+                  }}
+                  disabled={uploading}
+                  tabIndex={0}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>Select Image</>
+                  )}
+                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+                <p className="mt-6 text-base text-gray-400">PNG, JPG, GIF up to 50MB</p>
               </div>
-            </div>
-
-            {previewUrl && (
-              <div className="mt-4">
+            ) : (
+              <div className="w-full flex flex-col items-center justify-center py-6 transition-all duration-300">
                 <img
                   src={previewUrl}
                   alt="Uploaded image"
-                  className="w-full rounded-lg shadow-lg"
+                  className="w-full max-w-2xl max-h-[60vh] object-contain rounded-2xl shadow-xl border border-gray-200 bg-white transition-all duration-300"
+                  style={{ aspectRatio: '16/9' }}
                 />
+                <button
+                  type="button"
+                  className="mt-6 px-5 py-2 text-base text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                  onClick={() => { setPreviewUrl(null); setSelectedFile(null); fileInputRef.current!.value = ''; }}
+                >Change Image</button>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-blue-400">Ask Question</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter your question about the image"
-              className="w-full"
-            />
-            <Button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full mt-4"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Submit Query
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col items-center w-full max-w-md mt-8 md:mt-0">
+          <Card className="w-full bg-white/90 shadow-xl border-0">
+            <CardHeader>
+              <CardTitle className="text-blue-500 text-2xl font-semibold text-center">Ask Question</CardTitle>
+            </CardHeader>
+            <CardContent>
+  <form onSubmit={handleSubmit}>
+    <Textarea
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Enter your question about the image"
+      className="w-full"
+    />
+    <Button
+      type="submit"
+      disabled={loading}
+      className="w-full mt-4"
+    >
+      {loading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Processing...
+        </>
+      ) : (
+        <>
+          <MessageSquare className="mr-2 h-4 w-4" />
+          Submit Query
+        </>
+      )}
+    </Button>
+  </form>
+</CardContent>
+          </Card>
+        </div>
       </div>
+    {/* Modern Animated Slides Output */}
+    {(llamaResponse || llavaResponse) && (() => {
+        let heading = "";
+        let description = "";
+        let hashtags = "";
+        // Robust mapping from Groq backend
+        try {
+          const json = JSON.parse(llamaResponse);
+          if (json.heading && json.description) {
+            heading = json.heading;
+            description = json.description;
+            hashtags = json.hashtags || '';
+          } else {
+            throw new Error('Not JSON');
+          }
+        } catch {
+          if (llamaResponse) {
+            const parts = llamaResponse.split(/\n\n|\n|\r\n|\|\|\|/).map(s => s.trim()).filter(Boolean);
+            if (parts.length >= 3) {
+              [heading, description, hashtags] = parts;
+            } else if (parts.length >= 2) {
+              heading = parts[0];
+              description = parts[1];
+              hashtags = '';
+            } else if (parts.length === 1) {
+              heading = parts[0];
+              description = '';
+              hashtags = '';
+            }
+          }
+        }
+        // Clean description: remove bold markdown and convert * bullets to •
+        const formattedDescription = description
+          .replace(/\*\*([^*]+)\*\*/g, '$1')    // remove bold markdown
+          .replace(/^\*\s+/gm, '• ')            // bullets at line start
+          .replace(/\n\*\s+/g, '\n• ');        // bullets after newline
+        // Prepare slides
+        const slides = [
+          { title: "Heading", content: heading, color: "text-blue-400" },
+          { title: "Description", content: formattedDescription, color: "text-purple-400" },
+          { title: "Hashtags", content: hashtags, color: "text-teal-400" },
+        ];
+        return <div className="w-full flex justify-center mt-12 animate-fadein">
+          <ResultSlides slides={slides} />
+        </div>;
+      })()}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-green-400">Llama-3.2-11b-vision Response</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-gray-800 p-4 rounded text-gray-300">
-              {llamaResponse}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-green-400">Llama-3.2-90b-vision Response</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-gray-800 p-4 rounded text-gray-300">
-              {llavaResponse}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {error && (
         <Alert variant="destructive" className="mt-4">

@@ -5,11 +5,12 @@ import Pricing from "./components/dashboard/Pricing";
 import LoginForm from "./components/auth/LoginForm";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { TrialProvider, useTrial } from "./contexts/TrialContext";
-import routes from "tempo-routes";
+import routes from "./tempo-routes";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import ThumbnailAnalyzer from "./components/dashboard/ThumbnailAnalyzer";
 import ScriptGenerator from "./components/dashboard/ScriptGenerator";
 import KeywordMatrix from "./components/dashboard/KeywordMatrix";
+import TweetGenerator from "./components/dashboard/TweetGenerator";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -68,6 +69,7 @@ function AppContent() {
             <Route path="thumbnail-analyzer" element={<ThumbnailAnalyzer />} />
             <Route path="script-generator" element={<ScriptGenerator />} />
             <Route path="keyword-matrix" element={<KeywordMatrix />} />
+            <Route path="tweet-generator" element={<TweetGenerator />} />
             {import.meta.env.VITE_TEMPO === "true" && routes.map((route) => (
               <Route
                 key={route.path}

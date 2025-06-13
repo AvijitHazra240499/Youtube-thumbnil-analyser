@@ -7,11 +7,13 @@ import PayPalButton from "./PayPalButton";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useProStatus } from "@/hooks/useProStatus";
 import { useTrial } from "@/contexts/TrialContext";
+import TrialCountdown from "@/components/TrialCountdown";
 
 const FEATURES = [
   "Unlimited Thumbnail Analysis",
   "AI Script Generation",
   "Keyword Research Tools",
+  "Unlimited Tweet/Instagram Post Generation",
   "Team Collaboration",
   "Priority Support",
 ];
@@ -21,6 +23,7 @@ export default function Pricing() {
   const user = useCurrentUser();
   const { isPro, receiptUrl } = useProStatus(user?.id);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [selected, setSelected] = useState<'monthly' | 'yearly'>('monthly');
   const { daysLeft, expired, loading: trialLoading } = useTrial();
 
   if (trialLoading) {
@@ -31,8 +34,11 @@ export default function Pricing() {
     );
   }
 
+  const nextBorder = 'ring-4 ring-[#00F0FF] ring-offset-2 scale-105';
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#181c2b] via-[#232943] to-[#10131a] text-white p-6">
+      <TrialCountdown />
       <Card className="w-full max-w-3xl shadow-2xl bg-[#181c2b] border border-[#232943] rounded-2xl">
         <CardHeader>
           <CardTitle className="text-4xl font-extrabold text-center mb-1 text-[#00F0FF] drop-shadow">Upgrade to Pro</CardTitle>
@@ -42,22 +48,34 @@ export default function Pricing() {
         <CardContent>
           <div className="flex flex-col md:flex-row gap-8 justify-center mb-10">
             {/* Monthly Plan */}
-            <div className="flex-1 bg-[#232943] rounded-2xl p-8 flex flex-col items-center shadow-lg relative">
+            <div
+              className={`flex-1 rounded-2xl p-8 flex flex-col items-center shadow-lg relative cursor-pointer transition-transform ${selected==='monthly' ? nextBorder+' bg-[#1e2235]' : 'bg-[#232943]'}`}
+              onClick={() => setSelected('monthly')}
+            >
               <h3 className="text-xl font-bold mb-2 text-[#b0b3c6]">Monthly</h3>
               <div className="text-5xl font-extrabold mb-2">$5</div>
               <div className="text-[#7ee8fa] mb-4">per month</div>
               {!isPro && !expired && (
-                <PayPalButton amount="5.00" plan="monthly" onSuccess={() => setShowSuccess(true)} />
+                <div className="w-full">
+                  <PayPalButton key="monthly" amount="5.00" plan="monthly" onSuccess={() => setShowSuccess(true)} />
+                </div>
               )}
             </div>
             {/* Yearly Plan (highlighted) */}
-            <div className="flex-1 bg-[#1e2235] rounded-2xl p-8 flex flex-col items-center border-4 border-[#00F0FF] shadow-xl relative scale-105">
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#00F0FF] text-black text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-widest">Best Value</span>
+            <div
+              className={`flex-1 rounded-2xl p-8 flex flex-col items-center shadow-xl relative cursor-pointer transition-transform ${selected==='yearly' ? nextBorder+' bg-[#1e2235]' : 'bg-[#232943]'}`}
+              onClick={() => setSelected('yearly')}
+            >
+              {selected==='yearly' && (
+                <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#00F0FF] text-black text-xs font-bold px-4 py-1 rounded-full shadow-lg uppercase tracking-widest">Best Value</span>
+              )}
               <h3 className="text-xl font-bold mb-2 text-[#b0b3c6]">Yearly</h3>
               <div className="text-5xl font-extrabold mb-2">$39</div>
               <div className="text-[#7ee8fa] mb-4">per year</div>
               {!isPro && !expired && (
-                <PayPalButton amount="39.00" plan="yearly" onSuccess={() => setShowSuccess(true)} />
+                <div className="w-full">
+                  <PayPalButton key="yearly" amount="39.00" plan="yearly" onSuccess={() => setShowSuccess(true)} />
+                </div>
               )}
             </div>
           </div>

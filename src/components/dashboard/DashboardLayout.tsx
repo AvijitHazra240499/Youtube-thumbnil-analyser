@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   X,
+  Twitter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useProStatus } from "@/hooks/useProStatus";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import TrialCountdown from "@/components/TrialCountdown";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -33,6 +35,7 @@ const DashboardLayout = () => {
     { icon: FileText, label: "AI Script Factory", path: "/script-generator" },
     { icon: Search, label: "Keyword Research", path: "/keyword-matrix" },
     { icon: Users, label: "Collaboration", path: "/collaboration" },
+    { icon: Twitter, label: "Tweet Generator", path: "/tweet-generator" },
   ];
 
   return (
@@ -126,6 +129,7 @@ const DashboardLayout = () => {
 
       {/* Main Content */}
       <div className="flex flex-col flex-1 overflow-hidden">
+        <TrialCountdown />
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900">
           <div className="flex items-center gap-2">

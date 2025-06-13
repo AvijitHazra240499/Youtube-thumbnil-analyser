@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,13 +9,13 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BookOpen, Clock, Download, Edit, Eye, FileText, Save, Share2, Sparkles } from 'lucide-react';
+import { ResultSlides } from "./ResultSlides";
 
 interface ScriptGeneratorProps {
   keywords?: string[];
@@ -33,51 +33,176 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
   const [wordCount, setWordCount] = useState<number>(0);
   const [readTime, setReadTime] = useState<number>(0);
   const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
-  
-  // Mock script generation
-  const generateScript = () => {
+
+  // Only declare these ONCE inside the component
+  const TONE_OPTIONS = [
+    { value: "professional", label: "Professional" },
+    { value: "balanced", label: "Balanced" },
+    { value: "conventional", label: "Conventional" },
+  ];
+  const FORMAT_OPTIONS = [
+    { value: "shorts", label: "Shorts" },
+    { value: "howto", label: "How To" },
+    { value: "listicle", label: "Listicle" },
+  ];
+  const SLIDE_COLORS = [
+    "text-pink-400", "text-blue-400", "text-green-400", "text-yellow-400", "text-purple-400"
+  ];
+  const [toneStyle, setToneStyle] = useState<string>(TONE_OPTIONS[1].value); // balanced default
+  const [showSlides, setShowSlides] = useState<boolean>(false);
+  const [slides, setSlides] = useState<any[]>([]);
+
+  // --- Use Groq API for real script generation ---
+  const [fallbackWarning, setFallbackWarning] = useState<string>("");
+
+  const generateScript = async () => {
     setIsGenerating(true);
     setProgress(0);
-    
-    // Simulate script generation with progress updates
+    setShowSlides(false);
+    setSlides([]);
+    setScriptOutline("");
+    setFullScript("");
+    setFallbackWarning("");
+
+    // Simulate progress bar
+    let prog = 0;
     const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsGenerating(false);
-          
-          // Set mock data based on format
-          if (format === 'shorts') {
-            setScriptOutline(`1. Hook: Surprising fact\n2. Problem statement\n3. Solution reveal\n4. Call to action`);
-            setFullScript(`Did you know that 87% of viral thumbnails use this one simple trick? [HOOK]\n\nCreators struggle to get clicks because they're missing this key element in their thumbnails. [PROBLEM]\n\nBy using high contrast colors and emotional expressions, you can boost your CTR by up to 40%! Here's how to implement it... [SOLUTION]\n\nTry this on your next 3 videos and comment below with your results! [CTA]`);
-          } else if (format === 'howto') {
-            setScriptOutline(`1. Introduction\n2. Problem overview\n3. Step 1: Research\n4. Step 2: Implementation\n5. Step 3: Optimization\n6. Results & conclusion`);
-            setFullScript(`Welcome back to the channel! Today I'm showing you exactly how to create thumbnails that get CLICKS. [INTRO]\n\nThe biggest challenge most creators face is standing out in a crowded feed. Your thumbnail has less than 2 seconds to grab attention. [PROBLEM]\n\nSTEP 1: Research your niche. Find the top 10 videos in your category and analyze their thumbnail patterns. Look for color schemes, facial expressions, and text placement. [RESEARCH]\n\nSTEP 2: Create your template. Use contrasting colors (I recommend blue/orange or red/teal combinations), clear text under 4 words, and an emotional facial expression. [IMPLEMENTATION]\n\nSTEP 3: A/B test variations. Create 2-3 versions and test them with a small audience before finalizing. [OPTIMIZATION]\n\nFollowing this system, I've increased my CTR from 4% to 9.5% in just one month. Try these techniques and let me know your results in the comments! [CONCLUSION]`);
-          } else {
-            setScriptOutline(`1. Introduction\n2. Item #1\n3. Item #2\n4. Item #3\n5. Item #4\n6. Item #5\n7. Conclusion`);
-            setFullScript(`Today we're counting down the 5 most effective thumbnail strategies that are working RIGHT NOW. [INTRO]\n\n#5: Pattern Interruption - Use unexpected elements that break the pattern of what viewers normally see in their feed. [ITEM]\n\n#4: Emotional Triggers - Facial expressions that convey strong emotions like surprise, excitement or curiosity drive significantly higher click rates. [ITEM]\n\n#3: Color Psychology - Using complementary colors creates visual tension that attracts the eye. Red/teal and blue/orange combinations perform best in tests. [ITEM]\n\n#2: Text Hierarchy - Limit text to 3-4 words maximum, with one word significantly larger than the others to create visual hierarchy. [ITEM]\n\n#1: The 3-Second Rule - Your thumbnail concept must be understood within 3 seconds or less, or viewers will scroll past. [ITEM]\n\nImplement these 5 strategies in your next video and watch your CTR skyrocket! Don't forget to like and subscribe for more creator tips. [CONCLUSION]`);
-          }
-          
-          // Calculate word count and read time
-          const words = fullScript.split(/\s+/).length;
-          setWordCount(words);
-          setReadTime(Math.ceil(words / 150)); // Assuming 150 words per minute reading speed
-          
-          return 100;
-        }
-        return prev + 10;
+      prog += 10;
+      setProgress(prog);
+      if (prog >= 100) clearInterval(interval);
+    }, 100);
+
+    // Prepare prompt based on dropdowns
+    let prompt = "";
+    if (format === "shorts") prompt = `Generate a YouTube Shorts script for the topic '${topic}' in a ${toneStyle} style.`;
+    else if (format === "howto") prompt = `Generate a step-by-step 'How To' YouTube script for the topic '${topic}' in a ${toneStyle} style.`;
+    else prompt = `Generate a Listicle YouTube script for the topic '${topic}' in a ${toneStyle} style.`;
+
+    // --- Try Groq API ---
+    let script = null;
+    let groqFailed = false;
+    try {
+      const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${groqApiKey}`
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 1200,
+          temperature: 0.7
+        })
       });
-    }, 300);
+      if (!response.ok) {
+        groqFailed = true;
+        throw new Error(`Groq API error: ${response.status}`);
+      }
+      const data = await response.json();
+      script = data.choices?.[0]?.message?.content;
+      if (!script) {
+        groqFailed = true;
+        throw new Error("Groq API returned no script");
+      }
+    } catch (err) {
+      groqFailed = true;
+    }
+
+    // --- Fallback to OpenRouter if Groq fails ---
+    if (groqFailed) {
+      setFallbackWarning("Groq API failed, using OpenRouter fallback (mistralai/mistral-nemo:free)");
+      try {
+        const openrouterKey = import.meta.env.VITE_OPENROUTER_API_KEY || import.meta.env.OPENROUTER_API_KEY;
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openrouterKey}`
+          },
+          body: JSON.stringify({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 1200,
+            temperature: 0.7
+          })
+        });
+        if (!response.ok) {
+          throw new Error(`OpenRouter API error: ${response.status}`);
+        }
+        const data = await response.json();
+        script = data.choices?.[0]?.message?.content;
+      } catch (err) {
+        setFullScript("[Failed to generate script: Both Groq and OpenRouter failed. Please check your API keys and connection.]");
+        setShowSlides(false);
+        setIsGenerating(false);
+        setProgress(100);
+        return;
+      }
+    }
+
+    // --- Success: Use whichever script was generated ---
+    setFullScript(script);
+    setScriptOutline("AI generated outline unavailable");
+
+    // Attempt to detect tone/style from the script (first line or tag)
+    const lowerScript = script.toLowerCase();
+    let detectedTone = null;
+    if (lowerScript.includes("professional")) detectedTone = "professional";
+    else if (lowerScript.includes("balanced")) detectedTone = "balanced";
+    else if (lowerScript.includes("conversational") || lowerScript.includes("conventional")) detectedTone = "conventional";
+    if (detectedTone && TONE_OPTIONS.some(opt => opt.value === detectedTone)) {
+      setToneStyle(detectedTone);
+    }
+
+    // Split script into slides for animated display
+    const splitSlides = script.split(/\n\n|\n/).filter(Boolean).map((s, i) => ({
+      title: `${format.charAt(0).toUpperCase() + format.slice(1)} Slide ${i + 1}`,
+      content: s,
+      color: SLIDE_COLORS[i % SLIDE_COLORS.length]
+    }));
+    setSlides(splitSlides);
+    setShowSlides(true);
+    setWordCount(script.split(/\s+/).length);
+    setReadTime(Math.ceil(script.split(/\s+/).length / 150));
+    setIsGenerating(false);
+    setProgress(100);
   };
+
 
   return (
     <div className="bg-black text-white w-full h-full p-6">
-      <motion.div 
+      {/* SEO Optimization */}
+      <Helmet>
+        <title>AI YouTube Script Generator | Optimize Your Video Scripts</title>
+        <meta name="description" content="Generate optimized, high-quality YouTube video scripts with AI. Choose your tone, format, and get instant results!" />
+      </Helmet>
+      {/* Call-to-Action */}
+      <div className="my-4 p-4 bg-gradient-to-r from-[#00F0FF] to-[#6D5BFF] rounded-lg shadow-lg flex flex-col items-center">
+        <span className="text-xl font-semibold text-black mb-2">Ready to create your next viral video?</span>
+        <span className="text-lg text-white mb-2">Enter your topic and click <b>Generate Script</b> to get started!</span>
+        <Button size="lg" className="bg-[#00F0FF] text-black font-bold mt-2 px-8 py-3 text-lg hover:bg-[#6D5BFF] hover:text-white transition-all" onClick={generateScript} disabled={isGenerating}>
+          {isGenerating ? 'Generating...' : 'Generate Script Now'}
+        </Button>
+      </div>
+      {/* Animated wrapper for the UI */}
+      {/**
+       * motion.div from framer-motion supports initial, animate, transition props
+       * Ensure no stray angle brackets or JSX issues
+       */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="mb-6"
       >
+        {/* Fallback warning alert */}
+        {fallbackWarning && (
+          <div className="mb-4 p-3 rounded bg-yellow-200 text-yellow-900 font-semibold border border-yellow-400 animate-pulse">
+            ⚠️ {fallbackWarning}
+          </div>
+        )}
         <h2 className="text-2xl font-bold mb-2 flex items-center">
           <Sparkles className="mr-2 text-[#00F0FF]" /> AI Script Factory
         </h2>
@@ -89,64 +214,54 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
         <Card className="bg-gray-900 border-gray-800">
           <CardHeader>
             <CardTitle className="text-[#00F0FF]">Script Settings</CardTitle>
-            <CardDescription>Configure your script parameters</CardDescription>
+            <CardDescription className="text-gray-200">Configure your script parameters</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Format selection */}
+            {/* Format selection (Dropdown) */}
             <div className="space-y-2">
-              <Label htmlFor="format">Content Format</Label>
-              <Tabs defaultValue={format} onValueChange={setFormat} className="w-full">
-                <TabsList className="grid grid-cols-3 w-full bg-gray-800">
-                  <TabsTrigger value="shorts" className="data-[state=active]:bg-gray-700 data-[state=active]:text-[#00F0FF]">
-                    Shorts
-                  </TabsTrigger>
-                  <TabsTrigger value="howto" className="data-[state=active]:bg-gray-700 data-[state=active]:text-[#00F0FF]">
-                    How-To
-                  </TabsTrigger>
-                  <TabsTrigger value="listicle" className="data-[state=active]:bg-gray-700 data-[state=active]:text-[#00F0FF]">
-                    Listicle
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <Label htmlFor="format" className="text-white">Content Format</Label>
+              <Select value={format} onValueChange={setFormat}>
+                <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-[#00F0FF]">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FORMAT_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Tone selection (Dropdown ONLY) */}
+            <div className="space-y-2">
+              <Label htmlFor="tone" className="text-white">Tone/Style</Label>
+              <Select value={toneStyle} onValueChange={setToneStyle}>
+                <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Select tone" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-900 border border-gray-700 shadow-lg">
+                  {TONE_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-white hover:bg-gray-800 focus:bg-gray-800">{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Topic input */}
             <div className="space-y-2">
-              <Label htmlFor="topic">Video Topic</Label>
+              <Label htmlFor="topic" className="text-white">Video Topic</Label>
               <Input 
                 id="topic" 
                 placeholder="Enter your video topic" 
                 value={topic} 
                 onChange={(e) => setTopic(e.target.value)} 
-                className="bg-gray-800 border-gray-700 focus:border-[#00F0FF] focus:ring-[#00F0FF]" 
+                className="bg-gray-800 border-gray-700 focus:border-[#00F0FF] focus:ring-[#00F0FF] text-white placeholder-gray-300" 
               />
             </div>
 
-            {/* Tone slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label htmlFor="tone">Tone</Label>
-                <span className="text-sm text-gray-400">{tone < 30 ? 'Formal' : tone > 70 ? 'Casual' : 'Balanced'}</span>
-              </div>
-              <Slider 
-                id="tone" 
-                min={0} 
-                max={100} 
-                step={1} 
-                value={[tone]} 
-                onValueChange={(value) => setTone(value[0])} 
-                className="py-4" 
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Professional</span>
-                <span>Balanced</span>
-                <span>Conversational</span>
-              </div>
-            </div>
 
             {/* Keywords */}
             <div className="space-y-2">
-              <Label>Selected Keywords</Label>
+              <Label className="text-white">Selected Keywords</Label>
               <div className="flex flex-wrap gap-2">
                 {keywords.length > 0 ? (
                   keywords.map((keyword, index) => (
@@ -160,21 +275,7 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
               </div>
             </div>
 
-            {/* Advanced options */}
-            <div className="space-y-4 pt-4 border-t border-gray-800">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="hooks" className="cursor-pointer">Include Hooks</Label>
-                <Switch id="hooks" defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="cta" className="cursor-pointer">Add Call-to-Action</Label>
-                <Switch id="cta" defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="seo" className="cursor-pointer">SEO Optimization</Label>
-                <Switch id="seo" defaultChecked />
-              </div>
-            </div>
+
           </CardContent>
           <CardFooter>
             <Button 
@@ -218,17 +319,16 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
                       size="icon" 
                       onClick={() => setIsPreviewMode(!isPreviewMode)}
                       disabled={!fullScript}
-                      className="border-gray-700 bg-gray-800 hover:bg-gray-700"
+                      className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
                     >
-                      {isPreviewMode ? <Edit /> : <Eye />}
+                      {isPreviewMode ? <Edit className="text-white" /> : <Eye className="text-white" />}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="bg-gray-900 text-white border border-gray-700">
                     {isPreviewMode ? 'Switch to Edit Mode' : 'Switch to Preview Mode'}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -236,15 +336,14 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
                       variant="outline" 
                       size="icon"
                       disabled={!fullScript}
-                      className="border-gray-700 bg-gray-800 hover:bg-gray-700"
+                      className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
                     >
-                      <Save />
+                      <Save className="text-white" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Save Script</TooltipContent>
+                  <TooltipContent className="bg-gray-900 text-white border border-gray-700">Save Script</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -252,15 +351,14 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
                       variant="outline" 
                       size="icon"
                       disabled={!fullScript}
-                      className="border-gray-700 bg-gray-800 hover:bg-gray-700"
+                      className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
                     >
-                      <Download />
+                      <Download className="text-white" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Export Script</TooltipContent>
+                  <TooltipContent className="bg-gray-900 text-white border border-gray-700">Export Script</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -268,27 +366,33 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
                       variant="outline" 
                       size="icon"
                       disabled={!fullScript}
-                      className="border-gray-700 bg-gray-800 hover:bg-gray-700"
+                      className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
                     >
-                      <Share2 />
+                      <Share2 className="text-white" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Share Script</TooltipContent>
+                  <TooltipContent className="bg-gray-900 text-white border border-gray-700">Share Script</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
           </CardHeader>
-          
+          <>
           {isGenerating ? (
             <CardContent className="h-[500px] flex items-center justify-center">
               <div className="text-center">
                 <div className="mb-4">
-                  <Progress value={progress} className="h-2 w-64" />
+                  <Progress value={progress} className="h-2 w-64 animate-pulse bg-gradient-to-r from-[#00F0FF] via-pink-500 to-purple-400" />
                   <p className="mt-2 text-sm text-gray-400">{progress}% complete</p>
                 </div>
-                <p className="text-gray-400 max-w-md mx-auto">
-                  Generating your {format} script with {tone < 30 ? 'formal' : tone > 70 ? 'casual' : 'balanced'} tone...
+                <p className="text-gray-400 max-w-md mx-auto animate-fadein">
+                  Generating your {format} script in {toneStyle} style...
                 </p>
+              </div>
+            </CardContent>
+          ) : showSlides && slides.length > 0 ? (
+            <CardContent className="p-0">
+              <div className="min-h-[500px] flex items-center justify-center">
+                <ResultSlides slides={slides} />
               </div>
             </CardContent>
           ) : fullScript ? (
@@ -297,23 +401,21 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
                 <ResizablePanel defaultSize={30} minSize={20}>
                   <div className="p-4 h-full border-r border-gray-800">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-medium text-gray-300">Script Outline</h3>
+                      <h3 className="text-sm font-medium text-white">Script Outline</h3>
                       <Badge variant="outline" className="text-xs border-gray-700 text-gray-400">Structure</Badge>
                     </div>
                     <ScrollArea className="h-[450px] pr-4">
-                      <div className="whitespace-pre-line text-sm text-gray-400">
+                      <div className="whitespace-pre-line text-sm text-gray-200">
                         {scriptOutline}
                       </div>
                     </ScrollArea>
                   </div>
                 </ResizablePanel>
-                
                 <ResizableHandle withHandle className="bg-gray-800" />
-                
                 <ResizablePanel defaultSize={70}>
                   <div className="p-4 h-full">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-medium text-gray-300">Full Script</h3>
+                      <h3 className="text-sm font-medium text-white">Full Script</h3>
                       <div className="flex items-center space-x-3 text-xs text-gray-400">
                         <div className="flex items-center">
                           <FileText className="h-3 w-3 mr-1" />
@@ -325,10 +427,9 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
                         </div>
                       </div>
                     </div>
-                    
                     <ScrollArea className="h-[450px] pr-4">
                       {isPreviewMode ? (
-                        <div className="whitespace-pre-line text-gray-100">
+                        <div className="whitespace-pre-line text-white">
                           {fullScript}
                         </div>
                       ) : (
@@ -346,13 +447,13 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
           ) : (
             <CardContent className="h-[500px] flex flex-col items-center justify-center text-center">
               <BookOpen className="h-16 w-16 text-gray-700 mb-4" />
-              <h3 className="text-xl font-medium text-gray-400 mb-2">No Script Generated Yet</h3>
-              <p className="text-gray-500 max-w-md">
+              <h3 className="text-xl font-medium text-white mb-2">No Script Generated Yet</h3>
+              <p className="text-gray-200 max-w-md">
                 Configure your script settings and click "Generate Script" to create your content.
               </p>
             </CardContent>
           )}
-          
+
           {fullScript && (
             <CardFooter className="border-t border-gray-800 flex justify-between">
               <div className="text-xs text-gray-500">
@@ -368,6 +469,7 @@ const ScriptGenerator = ({ keywords = [], initialFormat = 'shorts' }: ScriptGene
               </div>
             </CardFooter>
           )}
+          </>
         </Card>
       </div>
     </div>
