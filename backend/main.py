@@ -366,6 +366,10 @@ def get_google_trends_keywords(query: str, max_results: int = 5) -> list:
             traceback.print_exc()
         print("[WARNING] No keywords found in Google Trends")
         return []
+    except Exception as e:
+        print(f"[ERROR] Google Trends API error: {e}")
+        import traceback; traceback.print_exc()
+        return []
 
 import re
 
