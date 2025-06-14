@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -105,217 +105,198 @@ const Home = () => {
 
           {/* Main Features */}
           <Tabs defaultValue="thumbnail" className="mb-8">
-            <TabsList className="bg-gray-900 border border-gray-800">
+            <TabsList className="bg-gray-900 border border-gray-800 py-[22px]"
+            // style={{border: '1px solid #00F0FF'}}
+            >
               <TabsTrigger
                 value="thumbnail"
-                className="px-4 py-2 text-white transition-all duration-200 data-[state=active]:bg-[#00F0FF]/10 data-[state=active]:text-[#00F0FF] hover:bg-gray-800/50"
+                className="px-4 py-2 text-white transition-all duration-200 data-[state=active]:bg-[#00F0FF]/10 data-[state=active]:text-[#00F0FF] hover:bg-gray-800/50 mr-1"
               >
                 Thumbnail Analyzer
               </TabsTrigger>
               <TabsTrigger
                 value="script"
-                className="px-4 py-2 text-white transition-all duration-200 data-[state=active]:bg-[#00F0FF]/10 data-[state=active]:text-[#00F0FF] hover:bg-gray-800/50"
+                className="px-4 py-2 text-white transition-all duration-200 data-[state=active]:bg-[#00F0FF]/10 data-[state=active]:text-[#00F0FF] hover:bg-gray-800/50 mx-1"
               >
                 AI Script Factory
               </TabsTrigger>
               <TabsTrigger
                 value="keyword"
-                className="px-4 py-2 text-white transition-all duration-200 data-[state=active]:bg-[#00F0FF]/10 data-[state=active]:text-[#00F0FF] hover:bg-gray-800/50"
+                className="px-4 py-2 text-white transition-all duration-200 data-[state=active]:bg-[#00F0FF]/10 data-[state=active]:text-[#00F0FF] hover:bg-gray-800/50 mx-1"
               >
                 Keyword Research
               </TabsTrigger>
-              <TabsTrigger
-                value="collab"
-                className="px-4 py-2 text-white transition-all duration-200 data-[state=active]:bg-[#00F0FF]/10 data-[state=active]:text-[#00F0FF] hover:bg-gray-800/50"
-              >
-                Collaboration
-              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="thumbnail" className="mt-4">
-              <Card className="bg-gray-900 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-xl text-white">
-                    Thumbnail Analyzer
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Upload your thumbnail to analyze trends and get performance
-                    insights.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <motion.div
-                    className="border-2 border-dashed border-gray-700 rounded-lg p-12 text-center cursor-pointer hover:border-[#00F0FF] transition-colors"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                  >
-                    <Upload className="h-12 w-12 mx-auto mb-4 text-gray-500" />
-                    <p className="text-lg font-medium text-white">
-                      Drag & drop your thumbnail here
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      or click to browse files
-                    </p>
-                    <Button className="mt-4 bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
-                      Upload Thumbnail
-                    </Button>
-                  </motion.div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="script" className="mt-4">
-              <Card className="bg-gray-900 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-xl text-white">
-                    AI Script Factory
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Generate optimized video scripts with AI assistance.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      {
-                        title: "Shorts Script",
-                        description:
-                          "Engaging 60-second scripts for vertical video",
-                        badge: "Popular",
-                      },
-                      {
-                        title: "How-To Tutorial",
-                        description: "Step-by-step instructional content",
-                        badge: "",
-                      },
-                      {
-                        title: "Listicle Format",
-                        description: "Ranked items with compelling hooks",
-                        badge: "New",
-                      },
-                    ].map((template, index) => (
+            <AnimatePresence mode="wait">
+              <TabsContent value="thumbnail" className="mt-4" asChild>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card className="bg-gray-900 border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-xl text-white">
+                        Thumbnail Analyzer
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Upload your thumbnail to analyze trends and get performance
+                        insights.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
                       <motion.div
-                        key={index}
-                        className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-[#00F0FF] cursor-pointer"
-                        whileHover={{ y: -5 }}
+                        className="border-2 border-dashed border-gray-700 rounded-lg p-12 text-center cursor-pointer hover:border-[#00F0FF] transition-colors"
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
                       >
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="font-medium text-lg text-white">
-                            {template.title}
-                          </h3>
-                          {template.badge && (
-                            <Badge className="bg-[#00F0FF] text-black">
-                              {template.badge}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-gray-400 text-sm mb-4">
-                          {template.description}
+                        <Upload className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+                        <p className="text-lg font-medium text-white">
+                          Drag & drop your thumbnail here
                         </p>
-                        <Button
-                          variant="ghost"
-                          className="text-[#00F0FF] p-0 flex items-center gap-2"
-                        >
-                          Use Template <ArrowRight className="h-4 w-4" />
+                        <p className="text-sm text-gray-500 mt-2">
+                          or click to browse files
+                        </p>
+                        <Button className="mt-4 bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
+                          Upload Thumbnail
                         </Button>
                       </motion.div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </TabsContent>
 
-            <TabsContent value="keyword" className="mt-4">
-              <Card className="bg-gray-900 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-xl text-white">
-                    Keyword Research Matrix
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Discover high-potential keywords with our Magic Score
-                    algorithm.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col gap-4">
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                      <div className="flex gap-2 mb-4">
-                        <input
-                          type="text"
-                          placeholder="Enter your topic..."
-                          className="flex-1 bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00F0FF]"
-                        />
-                        <Button className="bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
-                          Research
-                        </Button>
+              <TabsContent value="script" className="mt-4" asChild>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card className="bg-gray-900 border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-xl text-white">
+                        AI Script Factory
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Generate optimized video scripts with AI assistance.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                          {
+                            title: "Shorts Script",
+                            description:
+                              "Engaging 60-second scripts for vertical video",
+                            badge: "Popular",
+                          },
+                          {
+                            title: "How-To Tutorial",
+                            description: "Step-by-step instructional content",
+                            badge: "",
+                          },
+                          {
+                            title: "Listicle Format",
+                            description: "Ranked items with compelling hooks",
+                            badge: "New",
+                          },
+                        ].map((template, index) => (
+                          <motion.div
+                            key={index}
+                            className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-[#00F0FF] cursor-pointer"
+                            whileHover={{ y: -5 }}
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <h3 className="font-medium text-lg text-white">
+                                {template.title}
+                              </h3>
+                              {template.badge && (
+                                <Badge className="bg-[#00F0FF] text-black">
+                                  {template.badge}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-gray-400 text-sm mb-4">
+                              {template.description}
+                            </p>
+                            <Button
+                              variant="ghost"
+                              className="text-[#00F0FF] p-0 flex items-center gap-2"
+                            >
+                              Use Template <ArrowRight className="h-4 w-4" />
+                            </Button>
+                          </motion.div>
+                        ))}
                       </div>
-                      <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                        <div className="bg-gray-700 p-2 rounded">
-                          <p className="text-gray-400">Search Volume</p>
-                          <p className="font-bold">--</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent value="keyword" className="mt-4" asChild>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card className="bg-gray-900 border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-xl text-white">
+                        Keyword Research Matrix
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Discover high-potential keywords with our Magic Score
+                        algorithm.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-col gap-4">
+                        <div className="bg-gray-800 p-4 rounded-lg">
+                          <div className="flex gap-2 mb-4">
+                            <input
+                              type="text"
+                              placeholder="Enter your topic..."
+                              className="flex-1 bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00F0FF]"
+                            />
+                            <Button className="bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
+                              Research
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                            <div className="bg-gray-700 p-2 rounded">
+                              <p className="text-gray-400">Search Volume</p>
+                              <p className="font-bold">--</p>
+                            </div>
+                            <div className="bg-gray-700 p-2 rounded">
+                              <p className="text-gray-400">Competition</p>
+                              <p className="font-bold">--</p>
+                            </div>
+                            <div className="bg-gray-700 p-2 rounded">
+                              <p className="text-gray-400">Trend Score</p>
+                              <p className="font-bold">--</p>
+                            </div>
+                            <div className="bg-gray-700 p-2 rounded">
+                              <p className="text-gray-400">Magic Score</p>
+                              <p className="font-bold text-[#00F0FF]">--</p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="bg-gray-700 p-2 rounded">
-                          <p className="text-gray-400">Competition</p>
-                          <p className="font-bold">--</p>
-                        </div>
-                        <div className="bg-gray-700 p-2 rounded">
-                          <p className="text-gray-400">Trend Score</p>
-                          <p className="font-bold">--</p>
-                        </div>
-                        <div className="bg-gray-700 p-2 rounded">
-                          <p className="text-gray-400">Magic Score</p>
-                          <p className="font-bold text-[#00F0FF]">--</p>
+
+                        <div className="bg-gray-800 p-4 rounded-lg h-64 flex items-center justify-center">
+                          <p className="text-gray-500">
+                            Enter a topic to see keyword research results
+                          </p>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="bg-gray-800 p-4 rounded-lg h-64 flex items-center justify-center">
-                      <p className="text-gray-500">
-                        Enter a topic to see keyword research results
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="collab" className="mt-4">
-              <Card className="bg-gray-900 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-xl text-white">
-                    Collaboration Center
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Work with your team in real-time on projects.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col gap-4">
-                    <div className="bg-gray-800 p-6 rounded-lg text-center">
-                      <Users className="h-12 w-12 mx-auto mb-4 text-gray-500" />
-                      <h3 className="text-lg font-medium mb-2 text-white">
-                        Invite Team Members
-                      </h3>
-                      <p className="text-gray-400 mb-4">
-                        Collaborate with your team on content creation
-                      </p>
-                      <Button className="bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
-                        Invite Members
-                      </Button>
-                    </div>
-
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                      <h3 className="font-medium mb-4 text-white">
-                        Recent Projects
-                      </h3>
-                      <div className="text-gray-500 text-center py-8">
-                        No recent projects found
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </TabsContent>
+            </AnimatePresence>
           </Tabs>
 
           {/* Recent Activity */}

@@ -14,7 +14,6 @@ const FEATURES = [
   "AI Script Generation",
   "Keyword Research Tools",
   "Unlimited Tweet/Instagram Post Generation",
-  "Team Collaboration",
   "Priority Support",
 ];
 

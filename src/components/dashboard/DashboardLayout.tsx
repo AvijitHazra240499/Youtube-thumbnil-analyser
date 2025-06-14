@@ -37,9 +37,13 @@ const DashboardLayout = () => {
     { icon: Image, label: "Thumbnail Analyzer", path: "/thumbnail-analyzer" },
     { icon: FileText, label: "AI Script Factory", path: "/script-generator" },
     { icon: Search, label: "Keyword Research", path: "/keyword-matrix" },
-    { icon: Users, label: "Collaboration", path: "/collaboration" },
     { icon: Twitter, label: "Tweet Generator", path: "/tweet-generator" },
   ];
+
+  const getPageTitle = () => {
+    const currentItem = navItems.find(item => item.path === location.pathname);
+    return currentItem ? currentItem.label : "Dashboard";
+  };
 
   return (
     <div className="flex h-screen bg-black text-white">
@@ -149,7 +153,7 @@ const DashboardLayout = () => {
             >
               <Menu size={24} />
             </Button>
-            <h2 className="text-lg font-medium">Dashboard</h2>
+            <h2 className="text-lg font-medium">{getPageTitle()}</h2>
           </div>
 
           <div className="flex items-center gap-4">
