@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
@@ -24,10 +24,69 @@ import { useAuth } from "@/contexts/AuthContext";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import { useNavigate } from "react-router-dom";
+import { useDropzone } from "react-dropzone";
 
-const Home = () => {
+const Home: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [keywordInput, setKeywordInput] = useState<string>("");
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should be less than 5MB');
+        return;
+      }
+      setSelectedThumbnail(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const preview = reader.result as string;
+        setThumbnailPreview(preview);
+        // Navigate to the existing thumbnail analyzer route
+        navigate('/thumbnail-analyzer', { 
+          state: { 
+            thumbnailFile: file,
+            thumbnailPreview: preview 
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [navigate]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif']
+    },
+    maxFiles: 1
+  });
+
+  const handleRemoveThumbnail = () => {
+    setSelectedThumbnail(null);
+    setThumbnailPreview(null);
+  };
+
+  const handleKeywordResearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (keywordInput.trim()) {
+      navigate('/keyword-matrix', { 
+        state: { 
+          initialKeyword: keywordInput.trim(),
+          autoAnalyze: true 
+        }
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen text-white relative">
@@ -147,22 +206,34 @@ const Home = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <motion.div
-                        className="border-2 border-dashed border-gray-700 rounded-lg p-12 text-center cursor-pointer hover:border-[#00F0FF] transition-colors"
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
+                      <div
+                        {...getRootProps()}
+                        className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
+                          isDragActive 
+                            ? 'border-[#00F0FF] bg-[#00F0FF]/5' 
+                            : 'border-gray-700 hover:border-[#00F0FF]'
+                        }`}
                       >
-                        <Upload className="h-12 w-12 mx-auto mb-4 text-gray-500" />
-                        <p className="text-lg font-medium text-white">
-                          Drag & drop your thumbnail here
-                        </p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          or click to browse files
-                        </p>
-                        <Button className="mt-4 bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
-                          Upload Thumbnail
-                        </Button>
-                      </motion.div>
+                        <motion.div
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          className="w-full h-full"
+                        >
+                          <input {...getInputProps()} />
+                          <Upload className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+                          <p className="text-lg font-medium text-white">
+                            {isDragActive
+                              ? "Drop your thumbnail here"
+                              : "Drag & drop your thumbnail here"}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-2">
+                            or click to browse files
+                          </p>
+                          <Button className="mt-4 bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
+                            Upload Thumbnail
+                          </Button>
+                        </motion.div>
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -256,16 +327,22 @@ const Home = () => {
                     <CardContent>
                       <div className="flex flex-col gap-4">
                         <div className="bg-gray-800 p-4 rounded-lg">
-                          <div className="flex gap-2 mb-4">
+                          <form onSubmit={handleKeywordResearch} className="flex gap-2 mb-4">
                             <input
                               type="text"
                               placeholder="Enter your topic..."
+                              value={keywordInput}
+                              onChange={(e) => setKeywordInput(e.target.value)}
                               className="flex-1 bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00F0FF]"
                             />
-                            <Button className="bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80">
+                            <Button 
+                              type="submit"
+                              className="bg-[#00F0FF] text-black hover:bg-[#00F0FF]/80"
+                              disabled={!keywordInput.trim()}
+                            >
                               Research
                             </Button>
-                          </div>
+                          </form>
                           <div className="grid grid-cols-4 gap-2 text-center text-sm">
                             <div className="bg-gray-700 p-2 rounded">
                               <p className="text-gray-400">Search Volume</p>
@@ -285,12 +362,12 @@ const Home = () => {
                             </div>
                           </div>
                         </div>
-
+                        {/* 
                         <div className="bg-gray-800 p-4 rounded-lg h-64 flex items-center justify-center">
                           <p className="text-gray-500">
                             Enter a topic to see keyword research results
                           </p>
-                        </div>
+                        </div> */}
                       </div>
                     </CardContent>
                   </Card>

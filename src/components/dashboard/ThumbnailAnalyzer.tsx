@@ -1,4 +1,4 @@
-import React, { useState, useRef, DragEvent } from "react";
+import React, { useState, useRef, DragEvent, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Camera, Loader2, MessageSquare, Upload, AlertCircle } from "lucide-react";
@@ -8,9 +8,16 @@ import { Button } from "@/components/ui/button";
 import { useTrial } from "@/contexts/TrialContext";
 import { motion, AnimatePresence } from "framer-motion"; // For 3D/animated card effects
 import { ResultSlides } from "./ResultSlides";
+import { useLocation } from "react-router-dom";
 
+interface LocationState {
+  thumbnailFile: File;
+  thumbnailPreview: string;
+}
 
 export function ThumbnailAnalyzer() {
+  const location = useLocation();
+  const state = location.state as LocationState;
   const { isPro, daysLeft, expired, loading: trialLoading } = useTrial();
   const { isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +34,14 @@ export function ThumbnailAnalyzer() {
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
   const dropTimeoutRef = useRef<NodeJS.Timeout>();
   const dragCounterRef = useRef(0);
+
+  // Handle incoming thumbnail data from navigation
+  useEffect(() => {
+    if (state?.thumbnailFile && state?.thumbnailPreview) {
+      setSelectedFile(state.thumbnailFile);
+      setPreviewUrl(state.thumbnailPreview);
+    }
+  }, [state]);
 
   // Only one handleFileChange, uses fileInputRef
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, LayoutGrid } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { useLocation } from "react-router-dom";
 
 // KeywordMatrix component
 const KeywordMatrix: React.FC = () => {
+  const location = useLocation();
   // State variables
   const [pendingTerm, setPendingTerm] = useState("");
   const [keywordResults, setKeywordResults] = useState<any[]>([]);
@@ -15,9 +17,10 @@ const KeywordMatrix: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedKeyword, setSelectedKeyword] = useState<any | null>(null);
 
-  // Handler for searching keywords
-  const handleKeywordSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Function to perform keyword analysis
+  const performKeywordAnalysis = async (term: string) => {
+    if (!term.trim()) return;
+    
     setLoadingKeyword(true);
     setError(null);
     setKeywordResults([]);
@@ -26,7 +29,7 @@ const KeywordMatrix: React.FC = () => {
       try {
         // Always use suggest=5
         const apiBase = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-        const res = await fetch(`${apiBase}/analyze_keyword?query=${encodeURIComponent(pendingTerm)}&suggest=5`);
+        const res = await fetch(`${apiBase}/analyze_keyword?query=${encodeURIComponent(term)}&suggest=5`);
         if (!res.ok) {
           throw new Error('Failed to fetch keyword data from backend');
         }
@@ -42,6 +45,25 @@ const KeywordMatrix: React.FC = () => {
       setLoadingKeyword(false);
     }
   };
+
+  // Handler for searching keywords
+  const handleKeywordSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performKeywordAnalysis(pendingTerm);
+  };
+
+  // Handle initial keyword from navigation
+  useEffect(() => {
+    const state = location.state as { initialKeyword?: string; autoAnalyze?: boolean } | null;
+    if (state?.initialKeyword && state?.autoAnalyze) {
+      setPendingTerm(state.initialKeyword);
+      // Trigger analysis after a short delay to ensure component is mounted
+      const timer = setTimeout(() => {
+        performKeywordAnalysis(state.initialKeyword);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   // Handler for showing keyword details
   const handleShowDetails = (keyword: any) => {
