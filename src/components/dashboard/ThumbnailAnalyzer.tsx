@@ -329,6 +329,14 @@ export function ThumbnailAnalyzer() {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
               >
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
                 <AnimatePresence mode="wait">
                   {isDragging && !isDropping && (
                     <motion.div
