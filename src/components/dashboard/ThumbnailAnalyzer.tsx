@@ -160,9 +160,11 @@ export function ThumbnailAnalyzer() {
     try {
       setError(null);
       // Send image and query to FastAPI backend as form-data
+      const apiBase = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
       const formData = new FormData();
-      formData.append('image', file);      formData.append('query', queryText);
-      const response = await fetch('http://127.0.0.1:8000/upload_and_query', {
+      formData.append('image', file);      
+      formData.append('query', queryText);
+      const response = await fetch(`${apiBase}/upload_and_query`, {
         method: 'POST',
         body: formData,
       });
