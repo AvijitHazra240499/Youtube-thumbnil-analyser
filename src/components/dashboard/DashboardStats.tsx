@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, Sparkles, LineChart, Users } from "lucide-react";
+import { Upload, Sparkles, LineChart } from "lucide-react";
 
 const statsConfig = [
   {
@@ -18,11 +18,6 @@ const statsConfig = [
     key: "keywords",
     icon: <LineChart className="h-5 w-5 text-[#00F0FF]" />,
   },
-  {
-    title: "Team Members",
-    key: "members",
-    icon: <Users className="h-5 w-5 text-[#00F0FF]" />,
-  },
 ];
 
 export default function DashboardStats() {
@@ -31,7 +26,6 @@ export default function DashboardStats() {
     thumbnails: 24,
     scripts: 12,
     keywords: 36,
-    members: 3,
   });
 
   useEffect(() => {

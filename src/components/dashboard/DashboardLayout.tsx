@@ -20,12 +20,14 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useProStatus } from "@/hooks/useProStatus";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import TrialCountdown from "@/components/TrialCountdown";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 const DashboardLayout = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const location = useLocation();
@@ -35,19 +37,27 @@ const DashboardLayout = () => {
     { icon: Image, label: "Thumbnail Analyzer", path: "/thumbnail-analyzer" },
     { icon: FileText, label: "AI Script Factory", path: "/script-generator" },
     { icon: Search, label: "Keyword Research", path: "/keyword-matrix" },
-    { icon: Users, label: "Collaboration", path: "/collaboration" },
     { icon: Sparkles, label: "Image Generator", path: "/image-generator" },
     { icon: Twitter, label: "Tweet Generator", path: "/tweet-generator" },
   ];
+
+  const getPageTitle = () => {
+    const currentItem = navItems.find(item => item.path === location.pathname);
+    return currentItem ? currentItem.label : "Dashboard";
+  };
 
   return (
     <div className="flex h-screen bg-black text-white">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-gray-800 bg-gray-900">
         <div className="p-4 border-b border-gray-800">
-          <h1 className="text-xl font-bold text-[#00F0FF]">
+          {/* <h1 className="text-xl font-bold text-[#00F0FF]">
             CreatorVision Pro
-          </h1>
+          </h1> */}
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-[#00F0FF]" />
+            <h1 className="text-xl font-bold">CreatorVision Pro</h1>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
@@ -80,6 +90,7 @@ const DashboardLayout = () => {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-red-400"
+            onClick={logout}
           >
             <LogOut size={20} />
             <span>Logout</span>
@@ -143,13 +154,13 @@ const DashboardLayout = () => {
             >
               <Menu size={24} />
             </Button>
-            <h2 className="text-lg font-medium">Dashboard</h2>
+            <h2 className="text-lg font-medium">{getPageTitle()}</h2>
           </div>
 
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              className="border-[#00F0FF] text-[#00F0FF] hover:bg-[#00F0FF]/10"
+              className="relative px-6 py-2 font-medium transition-all duration-200 border-none bg-gradient-to-r from-[#00F0FF] to-[#00A3FF] text-black hover:from-[#00A3FF] hover:to-[#00F0FF] hover:shadow-lg hover:shadow-[#00F0FF]/20 rounded-lg"
               onClick={() => navigate('/pricing')}
             >
               Upgrade to Pro
@@ -175,7 +186,7 @@ const DashboardLayout = () => {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto bg-gray-950 p-6">
+        <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>
