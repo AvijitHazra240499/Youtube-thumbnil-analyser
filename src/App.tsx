@@ -11,6 +11,7 @@ import ThumbnailAnalyzer from "./components/dashboard/ThumbnailAnalyzer";
 import ScriptGenerator from "./components/dashboard/ScriptGenerator";
 import KeywordMatrix from "./components/dashboard/KeywordMatrix";
 import TweetGenerator from "./components/dashboard/TweetGenerator";
+import ImageGenerator from "./components/dashboard/ImageGenerator";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -69,6 +70,7 @@ function AppContent() {
             <Route path="thumbnail-analyzer" element={<ThumbnailAnalyzer />} />
             <Route path="script-generator" element={<ScriptGenerator />} />
             <Route path="keyword-matrix" element={<KeywordMatrix />} />
+            <Route path="image-generator" element={<ImageGenerator />} />
             <Route path="tweet-generator" element={<TweetGenerator />} />
             {import.meta.env.VITE_TEMPO === "true" && routes.map((route) => (
               <Route

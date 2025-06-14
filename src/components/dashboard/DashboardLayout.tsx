@@ -6,6 +6,7 @@ import {
   FileText,
   Search,
   Users,
+  Sparkles,
   Settings,
   LogOut,
   Menu,
@@ -35,6 +36,7 @@ const DashboardLayout = () => {
     { icon: FileText, label: "AI Script Factory", path: "/script-generator" },
     { icon: Search, label: "Keyword Research", path: "/keyword-matrix" },
     { icon: Users, label: "Collaboration", path: "/collaboration" },
+    { icon: Sparkles, label: "Image Generator", path: "/image-generator" },
     { icon: Twitter, label: "Tweet Generator", path: "/tweet-generator" },
   ];
 
