@@ -18,16 +18,8 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 
 app = FastAPI(title="Thumbnail Analyzer API")
 
-# CORS Middleware
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-    "*"
-]
+# CORS Middleware - Allow all origins for development
+origins = ["*"]  # In production, replace with specific origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,  # Allows all localhost and 127.0.0.1 origins
@@ -52,8 +44,84 @@ def setup_global_exception_handler(app):
     async def global_exception_handler(request: Request, exc: Exception):
         print(f"[GLOBAL ERROR] {repr(exc)}")
         return JSONResponse(status_code=500, content={"error": str(exc)})
-
 setup_global_exception_handler(app)
+
+# ---------------- Video Ideas Endpoint ----------------
+from uuid import uuid4
+
+async def _call_groq_for_ideas(title: str, description: str, n: int = 5) -> list:
+    """Call Groq API to generate n video ideas."""
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise RuntimeError("GROQ_API_KEY not set in environment")
+
+    headers = {
+        "Authorization": f"Bearer {groq_api_key}",
+        "Content-Type": "application/json",
+    }
+    prompt = (
+        f"You are an expert YouTube content strategist. "
+        f"Generate {n} creative video ideas based on the reference video:\n\n"
+        f"Title: {title}\n"
+        f"Description: {description}\n\n"
+        "Return ONLY valid JSON array where each element is an object with keys 'title', 'description', 'tags' (array of strings). "
+        "Example: [ {\"title\":\"Idea 1\", \"description\":\"...\", \"tags\":[\"tag1\"]}, ... ]"
+    )
+    payload = {
+        "model": "llama3-8b-8192",  # smaller model for speed/cost
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt},
+        ],
+        "max_tokens": 512,
+        "temperature": 0.8,
+    }
+    resp = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=60)
+    if resp.status_code != 200:
+        raise RuntimeError(f"Groq API error {resp.status_code}: {resp.text}")
+    try:
+        content = resp.json()["choices"][0]["message"]["content"].strip()
+        # Remove markdown code fences if present
+        if content.startswith("```"):
+            content = re.sub(r"^```[a-zA-Z]*", "", content)  # strip opening fence and optional lang
+            content = content.rstrip("`").rstrip()
+        # Extract JSON array even if model added surrounding text
+        start = content.find("[")
+        end = content.rfind("]")
+        if start == -1 or end == -1:
+            raise ValueError("No JSON array found in Groq response")
+        json_str = content[start:end+1]
+        ideas = json.loads(json_str)
+        # ensure proper format
+        out = []
+        for idea in ideas:
+            out.append({
+                "id": str(uuid4()),
+                "title": idea.get("title", ""),
+                "description": idea.get("description", ""),
+                "tags": idea.get("tags", []),
+            })
+        return out
+    except Exception as e:
+        print(f"[ERROR] Failed to parse Groq response: {e}\nRaw: {resp.text}")
+        raise RuntimeError("Failed to parse Groq response")
+
+@app.post("/ideas")
+async def generate_video_ideas(body: dict = Body(...)):
+    """Generate video ideas from Groq AI.
+    Expects {"title": "...", "description": "..."}
+    Returns {"ideas": [ ... ]}
+    """
+    title = body.get("title", "").strip()
+    description = body.get("description", "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="title is required")
+    try:
+        ideas = await _call_groq_for_ideas(title, description)
+        return {"ideas": ideas}
+    except Exception as e:
+        print(f"[IDEAS ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.options("/upload_and_query")
 async def options_upload_and_query():

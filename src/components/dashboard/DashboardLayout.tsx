@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -21,6 +21,7 @@ import { useProStatus } from "@/hooks/useProStatus";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import TrialCountdown from "@/components/TrialCountdown";
 import { useAuth } from "@/contexts/AuthContext";
+import { TrendingUp } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -37,8 +38,9 @@ const DashboardLayout = () => {
     { icon: Image, label: "Thumbnail Analyzer", path: "/thumbnail-analyzer" },
     { icon: FileText, label: "AI Script Factory", path: "/script-generator" },
     { icon: Search, label: "Keyword Research", path: "/keyword-matrix" },
-    { icon: Sparkles, label: "Image Generator", path: "/image-generator" },
+    { icon: Sparkles, label: "YouTube Thumbnail Generator", path: "/image-generator" },
     { icon: Twitter, label: "Tweet Generator", path: "/tweet-generator" },
+    { icon: TrendingUp, label: "Video Trends", path: "/video-trends" },
   ];
 
   const getPageTitle = () => {
@@ -47,7 +49,7 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white">
+    <div className="flex h-screen bg-black text-white overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-gray-800 bg-gray-900">
         <div className="p-4 border-b border-gray-800">
@@ -141,10 +143,10 @@ const DashboardLayout = () => {
       </Sheet>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <TrialCountdown />
-        {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900">
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+
+        {/* Mobile header */}
+        <header className="md:hidden p-4 border-b border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -187,9 +189,12 @@ const DashboardLayout = () => {
 
         {/* Content */}
         <main className="flex-1 overflow-auto">
+          <TrialCountdown />
           <Outlet />
         </main>
-      </div>
+
+        {/* Main content area */}
+      </main>
     </div>
   );
 };
