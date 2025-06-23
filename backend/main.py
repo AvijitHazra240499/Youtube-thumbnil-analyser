@@ -191,6 +191,7 @@ async def generate_script(request: Request, body: dict = Body(...)):
         print("[Gemini DEBUG] Prompt sent to Gemini:\n", prompt)
 
         gemini_api_key = os.getenv("GEMINI_API_KEY") or "AIzaSyAm9-71D5AYCF9jpPi8Jv5u8cdguF9F5vM"
+        
         if not gemini_api_key:
             return JSONResponse(status_code=500, content={"error": "GEMINI_API_KEY not set"})
 

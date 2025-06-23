@@ -30,7 +30,7 @@ interface DashboardLayoutProps {
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
   const navItems = [
@@ -53,9 +53,6 @@ const DashboardLayout = () => {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-gray-800 bg-gray-900">
         <div className="p-4 border-b border-gray-800">
-          {/* <h1 className="text-xl font-bold text-[#00F0FF]">
-            CreatorVision Pro
-          </h1> */}
           <div className="flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-[#00F0FF]" />
             <h1 className="text-xl font-bold">CreatorVision Pro</h1>
@@ -101,49 +98,78 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Mobile Sidebar */}
-      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent
-          side="left"
-          className="w-64 p-0 bg-gray-900 border-r border-gray-800"
-        >
+      <div className="md:hidden">
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent
+            side="left"
+            className="w-[280px] h-full p-0 bg-gray-900 border-r border-gray-800 z-50 flex flex-col"
+          >
           <div className="p-4 border-b border-gray-800">
             <h1 className="text-xl font-bold text-[#00F0FF]">
               CreatorVision Pro
             </h1>
           </div>
 
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {navItems.map((item, index) => (
               <Link
                 key={index}
                 to={item.path}
-                className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-800 transition-colors text-white text-base font-medium"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <item.icon size={20} className="text-[#00F0FF]" />
-                <span>{item.label}</span>
+                <item.icon size={22} className="text-[#00F0FF] flex-shrink-0" />
+                <span className="whitespace-nowrap">{item.label}</span>
               </Link>
             ))}
           </nav>
 
-          <div className="p-4 border-t border-gray-800">
-            <Button variant="ghost" className="w-full justify-start gap-3">
-              <Settings size={20} />
+          <div className="p-4 border-t border-gray-800 space-y-2 bg-gray-900">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3 text-white hover:bg-gray-800 text-base h-12"
+            >
+              <Settings size={22} className="flex-shrink-0" />
               <span>Settings</span>
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-red-400"
+              className="w-full justify-start gap-3 text-red-400 hover:bg-gray-800 text-base h-12"
+              onClick={(e) => {
+                e.preventDefault();
+                logout();
+              }}
             >
-              <LogOut size={20} />
+              <LogOut size={22} className="flex-shrink-0" />
               <span>Logout</span>
             </Button>
           </div>
-        </SheetContent>
-      </Sheet>
+          </SheetContent>
+        </Sheet>
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Desktop Header */}
+        <header className="hidden md:flex p-4 border-b border-gray-800 items-center justify-between">
+          <h2 className="text-lg font-medium">{getPageTitle()}</h2>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              className="relative px-6 py-2 font-medium transition-all duration-200 border-none bg-gradient-to-r from-[#00F0FF] to-[#00A3FF] text-black hover:from-[#00A3FF] hover:to-[#00F0FF] hover:shadow-lg hover:shadow-[#00F0FF]/20 rounded-lg"
+              onClick={() => navigate('/pricing')}
+            >
+              Upgrade to Pro
+            </Button>
+            <div className="flex items-center gap-2">
+              <Avatar>
+                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=creator" />
+                <AvatarFallback className="bg-gray-700">CN</AvatarFallback>
+              </Avatar>
+              <span className="px-2 py-1 bg-[#00F0FF] text-black rounded text-xs font-bold">Pro</span>
+            </div>
+          </div>
+        </header>
 
         {/* Mobile header */}
         <header className="md:hidden p-4 border-b border-gray-800 flex items-center justify-between">
@@ -151,8 +177,10 @@ const DashboardLayout = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden z-50 relative"
               onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open menu"
+              type="button"
             >
               <Menu size={24} />
             </Button>
