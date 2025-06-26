@@ -85,9 +85,8 @@ const LoginForm = () => {
         <Card className="bg-gray-900 border-gray-800 text-white">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center mb-4">
-              <Sparkles className="h-8 w-8 text-[#00F0FF] mr-2" />
-              <h1 className="text-2xl font-bold text-white">
-                CreatorVision Pro
+              <h1 className="text-4xl font-extrabold tracking-tight text-white">
+                viral<span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">IQ</span><span className="text-orange-500">🔥</span>
               </h1>
             </div>
             <CardTitle className="text-xl text-white">

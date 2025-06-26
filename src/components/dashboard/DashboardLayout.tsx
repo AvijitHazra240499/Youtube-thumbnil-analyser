@@ -54,8 +54,7 @@ const DashboardLayout = () => {
       <aside className="hidden md:flex flex-col w-64 border-r border-gray-800 bg-gray-900">
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-[#00F0FF]" />
-            <h1 className="text-xl font-bold">CreatorVision Pro</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight">viral<span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">IQ</span><span className="text-orange-500">🔥</span></h1>
           </div>
         </div>
 
@@ -105,8 +104,8 @@ const DashboardLayout = () => {
             className="w-[280px] h-full p-0 bg-gray-900 border-r border-gray-800 z-50 flex flex-col"
           >
           <div className="p-4 border-b border-gray-800">
-            <h1 className="text-xl font-bold text-[#00F0FF]">
-              CreatorVision Pro
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#00F0FF]">
+              viral<span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">IQ</span><span className="text-orange-500">🔥</span>
             </h1>
           </div>
 

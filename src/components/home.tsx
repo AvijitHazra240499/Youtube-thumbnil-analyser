@@ -112,9 +112,8 @@ const Home: React.FC = () => {
         {/* Header */}
         {/* <header className="border-b border-gray-800 p-4">
           <div className="container mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-[#00F0FF]" />
-              <h1 className="text-xl font-bold">CreatorVision Pro</h1>
+            <div className="flex items-center">
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">viral<span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">IQ</span><span className="text-orange-500">🔥</span></h1>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="ghost" className="text-gray-400 hover:text-white">
